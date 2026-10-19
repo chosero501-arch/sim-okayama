@@ -60,6 +60,7 @@ canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#000;dis
 </div>
 <div id="panel"><div class="box">
  <label>音量 <input type="range" id="vol" min="0" max="100" value="100"></label>
+ <label>機種 <select id="hw"><option value="cgb">GBC(カラー)</option><option value="dmg">GB(モノクロ・緑)</option><option value="gray">GB(モノクロ・灰)</option></select></label>
  <label>色味 <select id="cm"><option value="lcd">液晶風</option><option value="raw">鮮やか</option></select></label>
  <label>倍速(押している間は早送りキー Tab) <select id="ff"><option value="1">1x</option><option value="2">2x</option><option value="4">4x</option></select></label>
  <button id="exp">セーブを書き出し (.sav)</button>
@@ -86,7 +87,10 @@ function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTime
 function store(get){try{return localStorage.getItem(KEY)}catch(e){return null}}
 function persist(force){if(!gb)return;if(!force&&!gb.sramDirty)return;try{localStorage.setItem(KEY,bytesToB64(gb.getSave()));gb.sramDirty=false}catch(e){}}
 function newGB(){
-  gb=new GameBoy(rom,{colorMode:$('cm').value,sampleRate:actx?actx.sampleRate:44100});
+  const hw=$('hw').value;
+  gb=new GameBoy(rom,{colorMode:$('cm').value,sampleRate:actx?actx.sampleRate:44100,forceDmg:hw!=='cgb'});
+  if(hw==='gray')gb.dmgPalette=[0xFFEEEEEE,0xFFAAAAAA,0xFF666666,0xFF181818];
+  $('cm').disabled=hw!=='cgb';
   const s=store();if(s){try{gb.loadSave(b64ToBytes(s))}catch(e){}}
   gb.masterGain=0.22*($('vol').value/100);
 }
@@ -186,6 +190,8 @@ $('close').addEventListener('click',()=>$('panel').classList.remove('show'));
 $('vol').addEventListener('input',()=>{if(gb)gb.masterGain=0.22*($('vol').value/100);try{localStorage.setItem('sim-okayama-vol',$('vol').value)}catch(e){}});
 $('cm').addEventListener('change',()=>{if(gb)gb.setColorMode($('cm').value);try{localStorage.setItem('sim-okayama-cm',$('cm').value)}catch(e){}});
 $('ff').addEventListener('change',()=>{ff=+$('ff').value});
+$('hw').addEventListener('change',()=>{try{localStorage.setItem('sim-okayama-hw',$('hw').value)}catch(e){}persist(true);if(gb){newGB();$('panel').classList.remove('show');toast('機種を切り替えました(リセットされます。月末セーブは保持)')}});
+try{const h=localStorage.getItem('sim-okayama-hw');if(h)$('hw').value=h;$('cm').disabled=$('hw').value!=='cgb'}catch(e){}
 try{const v=localStorage.getItem('sim-okayama-vol');if(v)$('vol').value=v;const c=localStorage.getItem('sim-okayama-cm');if(c)$('cm').value=c}catch(e){}
 $('exp').addEventListener('click',()=>{if(!gb)return;persist(true);const b=new Blob([gb.getSave()],{type:'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='sim_okayama.sav';document.body.appendChild(a);a.click();a.remove();toast('書き出しました')});
 $('imp').addEventListener('click',()=>$('file').click());
