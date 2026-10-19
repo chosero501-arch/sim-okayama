@@ -92,11 +92,12 @@ function newGB(){
 }
 function layout(){
   const w=$('screenwrap');const land=matchMedia('(orientation:landscape) and (max-height:520px)').matches;
-  let scale;
-  if(land){scale=Math.max(1,Math.floor((innerHeight-12)/144*4)/4)}
-  else{scale=Math.max(1,Math.floor((innerWidth-0)/160*4)/4);const maxH=innerHeight*0.52;scale=Math.min(scale,maxH/144)}
-  const dpr=devicePixelRatio||1;
-  lcd.style.width=Math.floor(160*scale)+'px';lcd.style.height=Math.floor(144*scale)+'px';
+  const dpr=devicePixelRatio||1;let scale;
+  if(land){scale=(innerHeight-12)/144}
+  else{scale=Math.min(innerWidth/160,innerHeight*0.52/144)}
+  // 端末ピクセルで整数倍にして、ドットの太さを均一にする
+  const dev=Math.max(1,Math.floor(scale*dpr));
+  lcd.style.width=(160*dev/dpr)+'px';lcd.style.height=(144*dev/dpr)+'px';
 }
 addEventListener('resize',layout);layout();
 function startAudio(){
