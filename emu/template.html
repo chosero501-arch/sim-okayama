@@ -124,7 +124,17 @@ function loop(t){
   if(n){img.data.set(gb.frontBuf);ctx.putImageData(img,0,0)}
   if(t-saveT>2000){saveT=t;persist(false)}
 }
-$('start').addEventListener('pointerdown',e=>{e.preventDefault();begin()});
+function unlock(){
+  if(!actx){startAudio()}
+  if(actx&&actx.state!=='running'){try{actx.resume()}catch(e){}}
+  try{if(actx){const b=actx.createBuffer(1,1,22050),s=actx.createBufferSource();s.buffer=b;s.connect(actx.destination);s.start(0)}}catch(e){}
+  if(actx&&gb&&gb.sampleRate!==actx.sampleRate){const o=gb;persist(true);newGB()}
+}
+let started=false;
+function go(e){if(e&&e.preventDefault)e.preventDefault();unlock();if(!started){started=true;begin()}}
+$('start').addEventListener('click',go);
+$('start').addEventListener('touchend',go);
+for(const ev of ['pointerup','touchend','click','keydown'])addEventListener(ev,()=>{if(actx&&actx.state!=='running')try{actx.resume()}catch(e){}},true);
 // buttons
 const MASK={A:1,B:2,SE:4,ST:8,R:16,L:32,U:64,D:128};
 const touchBtn=new Map(); // pointerId -> mask
@@ -157,7 +167,7 @@ dp.addEventListener('pointerup',dup);dp.addEventListener('pointercancel',dup);dp
 // keyboard
 const KM={ArrowRight:16,ArrowLeft:32,ArrowUp:64,ArrowDown:128,x:1,X:1,z:2,Z:2,Enter:8,Shift:4,Backspace:4};
 addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();ff=+$('ff').value>1?+$('ff').value:4;return}
-  if(KM[e.key]){kbd|=KM[e.key];recompute();e.preventDefault();if(!running&&$('start').style.display!=='none')begin()}});
+  if(KM[e.key]){kbd|=KM[e.key];recompute();e.preventDefault();if(!started){started=true;unlock();begin()}}});
 addEventListener('keyup',e=>{if(e.key==='Tab'){ff=+$('ff').value;return}if(KM[e.key]){kbd&=~KM[e.key];recompute();e.preventDefault()}});
 // persistence & lifecycle
 addEventListener('pagehide',()=>persist(true));
