@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#14161a">
 <title>シム岡山</title>
 <style>
@@ -164,6 +164,12 @@ dp.addEventListener('pointerdown',e=>{e.preventDefault();dp.setPointerCapture(e.
 dp.addEventListener('pointermove',e=>{if(touchBtn.has(e.pointerId)){touchBtn.set(e.pointerId,dpMask(e));recompute()}});
 const dup=e=>{touchBtn.delete(e.pointerId);recompute()};
 dp.addEventListener('pointerup',dup);dp.addEventListener('pointercancel',dup);dp.addEventListener('lostpointercapture',dup);
+// iOSのダブルタップ拡大・ピンチ拡大を止める
+for(const ev of ['gesturestart','gesturechange','gestureend'])document.addEventListener(ev,e=>e.preventDefault(),{passive:false});
+document.addEventListener('touchstart',e=>{if(e.touches.length>1||!e.target.closest('#panel'))e.preventDefault()},{passive:false});
+let lastTE=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTE<500&&!e.target.closest('#panel'))e.preventDefault();lastTE=n},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>e.preventDefault());
 // keyboard
 const KM={ArrowRight:16,ArrowLeft:32,ArrowUp:64,ArrowDown:128,x:1,X:1,z:2,Z:2,Enter:8,Shift:4,Backspace:4};
 addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();ff=+$('ff').value>1?+$('ff').value:4;return}
