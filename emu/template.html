@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#14161a">
+<title>シム岡山</title>
+<style>
+:root{--bg:#14161a;--body:#23262d;--btn:#3a3f4a;--btn2:#8a2b45;--fg:#e8e6df;--mut:#8b909b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:system-ui,sans-serif;overflow:hidden;overscroll-behavior:none}
+#app{height:100%;display:flex;flex-direction:column;align-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#screenwrap{flex:0 0 auto;width:100%;display:flex;justify-content:center;padding:6px 0;background:#0b0c0e;position:relative}
+canvas{image-rendering:pixelated;image-rendering:crisp-edges;background:#000;display:block}
+#start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(10,11,14,.88);font-size:18px;text-align:center;cursor:pointer;z-index:5}
+#start small{color:var(--mut);font-size:12px}
+#pad{flex:1 1 auto;width:100%;max-width:560px;position:relative;min-height:200px}
+#dpad{position:absolute;left:4%;top:50%;width:min(44vw,200px);aspect-ratio:1;transform:translateY(-55%)}
+#dpad .h,#dpad .v{position:absolute;background:var(--btn);border-radius:10px}
+#dpad .h{left:0;right:0;top:33.3%;height:33.4%}
+#dpad .v{top:0;bottom:0;left:33.3%;width:33.4%}
+#dpad i{position:absolute;width:0;height:0;border:9px solid transparent}
+#dpad .u{top:6%;left:calc(50% - 9px);border-bottom-color:#9aa0ac}
+#dpad .d{bottom:6%;left:calc(50% - 9px);border-top-color:#9aa0ac}
+#dpad .l{left:6%;top:calc(50% - 9px);border-right-color:#9aa0ac}
+#dpad .r{right:6%;top:calc(50% - 9px);border-left-color:#9aa0ac}
+#dpad.on-U .u{border-bottom-color:#fff}#dpad.on-D .d{border-top-color:#fff}#dpad.on-L .l{border-right-color:#fff}#dpad.on-R .r{border-left-color:#fff}
+.ab{position:absolute;width:min(22vw,92px);aspect-ratio:1;border-radius:50%;background:var(--btn2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;box-shadow:0 3px 0 #0006}
+.ab.on,.sm.on{filter:brightness(1.5)}
+#bA{right:5%;top:22%}#bB{right:calc(5% + min(22vw,92px) + 6px);top:44%}
+.sm{position:absolute;bottom:6%;width:78px;height:30px;border-radius:15px;background:var(--btn);display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.08em;transform:rotate(-20deg)}
+#bSE{left:calc(50% - 90px)}#bST{left:calc(50% + 12px)}
+#menu{position:absolute;right:6px;top:6px;z-index:6;display:flex;gap:6px}
+#menu button{background:#0009;color:var(--fg);border:1px solid #fff3;border-radius:6px;font-size:12px;padding:5px 8px;touch-action:manipulation}
+#panel{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;z-index:20}
+#panel.show{display:flex}
+#panel div.box{background:var(--body);padding:16px;border-radius:12px;width:min(92vw,360px);display:flex;flex-direction:column;gap:12px;touch-action:manipulation}
+#panel label{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px}
+#panel button,#panel select{font-size:14px;padding:8px;border-radius:6px;border:0;background:var(--btn);color:var(--fg);touch-action:manipulation}
+#panel input[type=range]{touch-action:manipulation;flex:1}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#000c;padding:6px 12px;border-radius:14px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:30}
+@media (orientation:landscape) and (max-height:520px){
+ #app{flex-direction:row;justify-content:center}
+ #screenwrap{width:auto;height:100%;align-items:center;flex:0 0 auto}
+ #pad{position:absolute;inset:0;max-width:none;pointer-events:none}
+ #pad>*{pointer-events:auto}
+ #dpad{left:2%;width:min(30vh,150px);top:50%}
+ #bA{right:2%;top:30%;width:min(20vh,80px)}#bB{right:calc(2% + min(20vh,80px) + 6px);top:52%;width:min(20vh,80px)}
+ #bSE{left:2%;bottom:4%;transform:none}#bST{left:auto;right:2%;bottom:4%;transform:none}
+}
+</style></head><body>
+<div id="app">
+ <div id="screenwrap"><canvas id="lcd" width="160" height="144"></canvas>
+  <div id="menu"><button id="mbtn">設定</button></div>
+  <div id="start"><div>タップして開始</div><small>音が出ます / セーブはこの端末に自動保存</small></div>
+ </div>
+ <div id="pad">
+  <div id="dpad"><div class="h"></div><div class="v"></div><i class="u"></i><i class="d"></i><i class="l"></i><i class="r"></i></div>
+  <div class="ab" id="bB" data-k="2">B</div><div class="ab" id="bA" data-k="1">A</div>
+  <div class="sm" id="bSE" data-k="4">SELECT</div><div class="sm" id="bST" data-k="8">START</div>
+ </div>
+</div>
+<div id="panel"><div class="box">
+ <label>音量 <input type="range" id="vol" min="0" max="100" value="100"></label>
+ <label>色味 <select id="cm"><option value="lcd">液晶風</option><option value="raw">鮮やか</option></select></label>
+ <label>倍速(押している間は早送りキー Tab) <select id="ff"><option value="1">1x</option><option value="2">2x</option><option value="4">4x</option></select></label>
+ <button id="exp">セーブを書き出し (.sav)</button>
+ <button id="imp">セーブを読み込み (.sav)</button>
+ <button id="reset">リセット</button>
+ <button id="close">閉じる</button>
+ <input type="file" id="file" hidden accept=".sav,.srm">
+</div></div>
+<div id="toast"></div>
+<script>
+/*GBJS*/
+</script>
+<script>
+(function(){
+const ROM_B64="/*ROM*/";
+const KEY='sim-okayama-sav-v1';
+const $=id=>document.getElementById(id);
+function b64ToBytes(s){const b=atob(s),a=new Uint8Array(b.length);for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
+function bytesToB64(a){let s='';for(let i=0;i<a.length;i+=0x8000)s+=String.fromCharCode.apply(null,a.subarray(i,i+0x8000));return btoa(s)}
+const rom=b64ToBytes(ROM_B64);
+let gb=null,actx=null,node=null,running=false,ff=1,buttons=0;
+const lcd=$('lcd'),ctx=lcd.getContext('2d'),img=ctx.createImageData(160,144);
+function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,1600)}
+function store(get){try{return localStorage.getItem(KEY)}catch(e){return null}}
+function persist(force){if(!gb)return;if(!force&&!gb.sramDirty)return;try{localStorage.setItem(KEY,bytesToB64(gb.getSave()));gb.sramDirty=false}catch(e){}}
+function newGB(){
+  gb=new GameBoy(rom,{colorMode:$('cm').value,sampleRate:actx?actx.sampleRate:44100});
+  const s=store();if(s){try{gb.loadSave(b64ToBytes(s))}catch(e){}}
+  gb.masterGain=0.22*($('vol').value/100);
+}
+function layout(){
+  const w=$('screenwrap');const land=matchMedia('(orientation:landscape) and (max-height:520px)').matches;
+  let scale;
+  if(land){scale=Math.max(1,Math.floor((innerHeight-12)/144*4)/4)}
+  else{scale=Math.max(1,Math.floor((innerWidth-0)/160*4)/4);const maxH=innerHeight*0.52;scale=Math.min(scale,maxH/144)}
+  const dpr=devicePixelRatio||1;
+  lcd.style.width=Math.floor(160*scale)+'px';lcd.style.height=Math.floor(144*scale)+'px';
+}
+addEventListener('resize',layout);layout();
+function startAudio(){
+  if(actx)return;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;actx=new AC({latencyHint:'interactive'});
+    node=actx.createScriptProcessor(1024,0,2);
+    node.onaudioprocess=e=>{if(!gb){return}const L=e.outputBuffer.getChannelData(0),R=e.outputBuffer.getChannelData(1);const n=gb.readAudio(L,R,L.length);for(let i=n;i<L.length;i++){L[i]=0;R[i]=0}};
+    node.connect(actx.destination);
+    if(actx.state==='suspended')actx.resume();
+  }catch(e){actx=null}
+}
+function begin(){
+  startAudio();
+  if(gb&&actx&&gb.sampleRate&&gb.sampleRate!==actx.sampleRate){persist(true);newGB()}
+  if(!gb)newGB();
+  $('start').style.display='none';running=true;last=performance.now();acc=0;requestAnimationFrame(loop);
+}
+let last=0,acc=0,saveT=0;const FT=1000/59.7275;
+function loop(t){
+  if(!running)return;requestAnimationFrame(loop);
+  let dt=t-last;last=t;if(dt>100)dt=100;acc+=dt*ff;
+  let n=0;
+  while(acc>=FT&&n<8){gb.setButtons(buttons);gb.runFrame();acc-=FT;n++}
+  if(n){img.data.set(gb.frontBuf);ctx.putImageData(img,0,0)}
+  if(t-saveT>2000){saveT=t;persist(false)}
+}
+$('start').addEventListener('pointerdown',e=>{e.preventDefault();begin()});
+// buttons
+const MASK={A:1,B:2,SE:4,ST:8,R:16,L:32,U:64,D:128};
+const touchBtn=new Map(); // pointerId -> mask
+function recompute(){let m=0;for(const v of touchBtn.values())m|=v;buttons=(m|kbd);
+  for(const el of document.querySelectorAll('[data-k]'))el.classList.toggle('on',!!(m&+el.dataset.k));
+  const dp=$('dpad');for(const k of 'UDLR')dp.classList.toggle('on-'+k,!!(buttons&MASK[k]));}
+let kbd=0;
+for(const el of document.querySelectorAll('[data-k]')){
+  const k=+el.dataset.k;
+  el.addEventListener('pointerdown',e=>{e.preventDefault();el.setPointerCapture(e.pointerId);touchBtn.set(e.pointerId,k);recompute();if(navigator.vibrate)try{navigator.vibrate(8)}catch(_){}});
+  const up=e=>{touchBtn.delete(e.pointerId);recompute()};
+  el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up);
+}
+const dp=$('dpad');
+function dpMask(e){
+  const r=dp.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+  let m=0;const dz=.12;
+  if(Math.hypot(x,y)<dz)return 0;
+  const a=Math.atan2(y,x)*180/Math.PI; // 0=right
+  if(a>-67.5&&a<67.5)m|=MASK.R;
+  if(a>112.5||a<-112.5)m|=MASK.L;
+  if(a>22.5&&a<157.5)m|=MASK.D;
+  if(a<-22.5&&a>-157.5)m|=MASK.U;
+  return m;
+}
+dp.addEventListener('pointerdown',e=>{e.preventDefault();dp.setPointerCapture(e.pointerId);touchBtn.set(e.pointerId,dpMask(e));recompute()});
+dp.addEventListener('pointermove',e=>{if(touchBtn.has(e.pointerId)){touchBtn.set(e.pointerId,dpMask(e));recompute()}});
+const dup=e=>{touchBtn.delete(e.pointerId);recompute()};
+dp.addEventListener('pointerup',dup);dp.addEventListener('pointercancel',dup);dp.addEventListener('lostpointercapture',dup);
+// keyboard
+const KM={ArrowRight:16,ArrowLeft:32,ArrowUp:64,ArrowDown:128,x:1,X:1,z:2,Z:2,Enter:8,Shift:4,Backspace:4};
+addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();ff=+$('ff').value>1?+$('ff').value:4;return}
+  if(KM[e.key]){kbd|=KM[e.key];recompute();e.preventDefault();if(!running&&$('start').style.display!=='none')begin()}});
+addEventListener('keyup',e=>{if(e.key==='Tab'){ff=+$('ff').value;return}if(KM[e.key]){kbd&=~KM[e.key];recompute();e.preventDefault()}});
+// persistence & lifecycle
+addEventListener('pagehide',()=>persist(true));
+document.addEventListener('visibilitychange',()=>{if(document.hidden){persist(true);if(actx&&actx.state==='running')actx.suspend()}else{if(actx&&actx.state==='suspended')actx.resume();last=performance.now()}});
+// settings
+$('mbtn').addEventListener('pointerdown',e=>e.stopPropagation());
+$('mbtn').addEventListener('click',()=>$('panel').classList.add('show'));
+$('close').addEventListener('click',()=>$('panel').classList.remove('show'));
+$('vol').addEventListener('input',()=>{if(gb)gb.masterGain=0.22*($('vol').value/100);try{localStorage.setItem('sim-okayama-vol',$('vol').value)}catch(e){}});
+$('cm').addEventListener('change',()=>{if(gb)gb.setColorMode($('cm').value);try{localStorage.setItem('sim-okayama-cm',$('cm').value)}catch(e){}});
+$('ff').addEventListener('change',()=>{ff=+$('ff').value});
+try{const v=localStorage.getItem('sim-okayama-vol');if(v)$('vol').value=v;const c=localStorage.getItem('sim-okayama-cm');if(c)$('cm').value=c}catch(e){}
+$('exp').addEventListener('click',()=>{if(!gb)return;persist(true);const b=new Blob([gb.getSave()],{type:'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='sim_okayama.sav';document.body.appendChild(a);a.click();a.remove();toast('書き出しました')});
+$('imp').addEventListener('click',()=>$('file').click());
+$('file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;const buf=new Uint8Array(await f.arrayBuffer());
+  try{localStorage.setItem(KEY,bytesToB64(buf))}catch(_){}
+  if(gb){gb.loadSave(buf);}toast('読み込みました。リセットで反映');e.target.value=''});
+$('reset').addEventListener('click',()=>{persist(true);const was=running;newGB();$('panel').classList.remove('show');toast('リセットしました')});
+window.__gb=()=>gb;
+})();
+</script></body></html>
