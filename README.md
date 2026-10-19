@@ -1,6 +1,6 @@
 # シム岡山
 
-GBC/DMG 互換の街づくりゲーム(岡山県27市町村)。`sim_okayama.gbc` が ROM(段階10 川オートタイル版(32×24), SHA-256 f08ee79f…e5f4)。
+GBC/DMG 互換の街づくりゲーム(岡山県27市町村)。`sim_okayama.gbc` が ROM(段階10 配置モード版(32×24), SHA-256 a157940d…5ebc)。
 
 ## ブラウザで遊ぶ
 `index.html` が EmulatorJS(CDN)で ROM を読み込みます。
